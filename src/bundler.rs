@@ -2,8 +2,9 @@ use regex::Regex;
 
 #[derive(Debug)]
 pub(crate) struct Source {
-    pub(crate) name: String,
-    pub(crate) version: String,
+    name: String,
+    version: String,
+    platform: Option<String>,
 }
 
 pub(crate) struct Gemfile {
@@ -38,10 +39,12 @@ pub(crate) fn parse_gemfile(gemfile_content: String, verbose: bool) -> Gemfile {
 
         if gems_section && spec_regexp.is_match(line) {
             let captures = spec_regexp.captures(line).unwrap();
+            let version_info = parse_gem_version(captures.get(2).unwrap().as_str());
 
             gems.push(Source {
                 name: String::from(captures.get(1).unwrap().as_str()),
-                version: String::from(captures.get(2).unwrap().as_str()),
+                version: version_info.0,
+                platform: version_info.1,
             });
         }
     }
@@ -55,11 +58,33 @@ pub(crate) fn parse_gemfile(gemfile_content: String, verbose: bool) -> Gemfile {
     result
 }
 
+//
+// Try to find platform specific version of gem
+//
+fn parse_gem_version(version_str: &str) -> (String, Option<String>) {
+    match version_str.split_once('-') {
+        Some((version, platform)) => (version.to_string(), Some(platform.to_string())),
+        None => (version_str.to_string(), None),
+    }
+}
+
 impl Gemfile {
     fn show_info(&self) {
         let length = self.gems.len();
 
         println!("\nGemfile.lock file total contains {} gems\n", length);
+    }
+}
+
+impl Source {
+    //
+    // Returns Gemfile.lock item by tuple contains (name, version, platform)
+    //
+    pub(crate) fn get_source(&self) -> (&str, &str, Option<&str>) {
+        match &self.platform {
+            Some(platform) => (&self.name, &self.version, Some(platform)),
+            None => (&self.name, &self.version, None),
+        }
     }
 }
 
@@ -185,6 +210,8 @@ GEM
     choice (0.2.0)
     clavius (1.0.4)
     coderay (1.1.3)
+    nokogiri (1.16.5-arm64-darwin)
+    opentelemetry-instrumentation-net_http (0.20.0)
 
 PLATFORMS
   arm64-darwin-23
@@ -206,17 +233,27 @@ BUNDLED WITH
         let result = parse_gemfile(String::from(gemfile), false);
         let gems = result.gems;
 
-        assert_eq!(gems.len(), 4);
-        assert_eq!(gems.get(0).unwrap().name.as_str(), "actioncable");
-        assert_eq!(gems.get(0).unwrap().version.as_str(), "7.0.8.4");
-
-        assert_eq!(gems.get(1).unwrap().name.as_str(), "choice");
-        assert_eq!(gems.get(1).unwrap().version.as_str(), "0.2.0");
-
-        assert_eq!(gems.get(2).unwrap().name.as_str(), "clavius");
-        assert_eq!(gems.get(2).unwrap().version.as_str(), "1.0.4");
-
-        assert_eq!(gems.get(3).unwrap().name.as_str(), "coderay");
-        assert_eq!(gems.get(3).unwrap().version.as_str(), "1.1.3");
+        assert_eq!(gems.len(), 6);
+        assert_eq!(
+            gems.get(0).unwrap().get_source(),
+            ("actioncable", "7.0.8.4", None)
+        );
+        assert_eq!(gems.get(1).unwrap().get_source(), ("choice", "0.2.0", None));
+        assert_eq!(
+            gems.get(2).unwrap().get_source(),
+            ("clavius", "1.0.4", None)
+        );
+        assert_eq!(
+            gems.get(3).unwrap().get_source(),
+            ("coderay", "1.1.3", None)
+        );
+        assert_eq!(
+            gems.get(4).unwrap().get_source(),
+            ("nokogiri", "1.16.5", Some("arm64-darwin"))
+        );
+        assert_eq!(
+            gems.get(5).unwrap().get_source(),
+            ("opentelemetry-instrumentation-net_http", "0.20.0", None)
+        );
     }
 }
