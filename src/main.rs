@@ -13,6 +13,7 @@ mod client;
 mod config;
 mod errors;
 mod gem;
+mod nexus;
 
 const CONCURRENT_REQUESTS: usize = 50;
 
