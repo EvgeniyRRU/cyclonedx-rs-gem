@@ -9,6 +9,7 @@ mod bom_se;
 mod bundler;
 mod config;
 mod gem;
+mod nexus;
 
 const CONCURRENT_REQUESTS: usize = 50;
 

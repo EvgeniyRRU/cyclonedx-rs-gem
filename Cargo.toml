@@ -16,3 +16,4 @@ serde_json = { version = "1.0.117", features = ["std"] }
 tokio = { version = "1.38.0", features = ["macros", "rt"] }
 futures = "0.3"
 uuid = { version = "1.8.0", features = ["v4", "fast-rng"] }
+url = "2.5.2"
