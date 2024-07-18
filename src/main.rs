@@ -22,7 +22,7 @@ async fn main() -> Result<()> {
 
     let gems = fetch_gems_info(specs.gems, params.verbose).await;
 
-    let bom_file = bom_se::serialize(gems, &params.format)?;
+    let bom_file = bom_se::serialize(&gems, &params.format)?;
 
     write_bomfile(&params.output_file_name, bom_file)?;
 

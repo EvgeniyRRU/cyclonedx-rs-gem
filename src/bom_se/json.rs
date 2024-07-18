@@ -6,18 +6,18 @@ use crate::gem::Gemspec;
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-struct Bom {
+struct Bom<'a> {
     bom_format: String,
     spec_version: String,
     serial_number: String,
     version: u8,
-    components: Vec<Gemspec>,
+    components: &'a Vec<Gemspec>,
 }
 
 ///
 /// Serialize gems collection to json string
 ///
-pub(super) fn serialize(gems: Vec<Gemspec>) -> Result<String> {
+pub(super) fn serialize(gems: &Vec<Gemspec>) -> Result<String> {
     let serial_number = format!("urn:uuid:{}", Uuid::new_v4());
 
     build_json(gems, serial_number)
@@ -27,14 +27,14 @@ pub(super) fn serialize(gems: Vec<Gemspec>) -> Result<String> {
 // Builds bom.json file content. A separate function need for
 // testing
 //
-fn build_json(gems: Vec<Gemspec>, serial_number: String) -> Result<String> {
+fn build_json(gems: &Vec<Gemspec>, serial_number: String) -> Result<String> {
     let bom_content = Bom::new(gems, serial_number);
 
     Ok(serde_json::to_string_pretty(&bom_content)?)
 }
 
-impl Bom {
-    fn new(components: Vec<Gemspec>, serial_number: String) -> Self {
+impl<'a> Bom<'a> {
+    fn new(components: &'a Vec<Gemspec>, serial_number: String) -> Bom<'a> {
         Bom {
             bom_format: String::from("CycloneDX"),
             spec_version: String::from("1.5"),
@@ -56,7 +56,7 @@ mod tests {
         let gems: Vec<Gemspec> = Vec::new();
         let serial = String::from("urn:uuid:b83ca3d9-6b17-4566-bd50-201af63d9c42");
 
-        let json = build_json(gems, serial);
+        let json = build_json(&gems, serial);
         let expected = r#"{
   "bomFormat": "CycloneDX",
   "specVersion": "1.5",
@@ -102,7 +102,7 @@ mod tests {
         let gems = vec![first_gem, second_gem];
         let serial = String::from("urn:uuid:b83ca3d9-6b17-4566-bd50-201af63d9c42");
 
-        let json = build_json(gems, serial);
+        let json = build_json(&gems, serial);
         let expected = r#"{
   "bomFormat": "CycloneDX",
   "specVersion": "1.5",
