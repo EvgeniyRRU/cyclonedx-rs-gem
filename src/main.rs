@@ -27,7 +27,7 @@ async fn main() -> Result<()> {
     let client = client::get_client()?;
     let gems = fetch_gems_info(&client, specs.gems, params.verbose).await;
 
-    let bom_file = bom_se::serialize(gems, &params.format)?;
+    let bom_file = bom_se::serialize(&gems, &params.format)?;
 
     write_bomfile(&params.output_file_name, bom_file)?;
 
