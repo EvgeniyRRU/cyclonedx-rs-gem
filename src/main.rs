@@ -31,11 +31,13 @@ async fn main() -> Result<()> {
 
     write_bomfile(&params.output_file_name, bom_file)?;
 
+    check_nexus_repository(&gems, &params).await?;
+
     Ok(())
 }
 
 //
-// This is a core fumction. It spawns threads and dispatches it
+// This is a core function. It spawns threads and dispatches it
 // to make requests and fetch all gems info from rubygems.org
 //
 type GemspecResultsPartition = (
@@ -97,6 +99,28 @@ fn write_bomfile(file_name: &PathBuf, content: String) -> Result<()> {
     let mut file = File::create(file_name)?;
 
     file.write_all(content.as_bytes())?;
+
+    Ok(())
+}
+
+async fn check_nexus_repository(gems: &Vec<gem::Gemspec>, params: &config::Params) -> Result<()> {
+    if let Some(url) = &params.nexus_url {
+        let result = nexus::check_packages(gems, url, params.verbose).await?;
+
+        let not_found: Vec<nexus::NexusResult> =
+            result.into_iter().filter(|item| !item.is_exist).collect();
+
+        if not_found.is_empty() {
+            println!("All packages exists in nexus repository.");
+        } else {
+            for package in not_found {
+                println!(
+                    "Package not found in Nexus. Name: {}, version: {}, purl: {}",
+                    package.name, package.version, package.purl
+                )
+            }
+        }
+    }
 
     Ok(())
 }

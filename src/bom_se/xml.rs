@@ -39,8 +39,7 @@ fn build_xml(gems: &Vec<Gemspec>, serial_number: &str) -> Result<String> {
             ]
             .into_iter(),
         )
-        // .write_pi_content(r#"xml version="1.0" encoding="utf-8"#)?
-        .write_inner_content::<_, Error>(|writer| build_components(writer, &gems))?;
+        .write_inner_content::<_, Error>(|writer| build_components(writer, gems))?;
 
     let xml_bytes = writer.into_inner();
 

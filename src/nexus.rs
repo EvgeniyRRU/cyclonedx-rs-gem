@@ -1,7 +1,41 @@
 use anyhow::{anyhow, Result};
+use futures::{stream, StreamExt};
 use reqwest::get;
 use serde_json::Value;
 use url::Url;
+
+use crate::gem::Gemspec;
+
+const CONCURRENT_REQUESTS: usize = 50;
+
+type ResultCollection = Vec<Result<NexusResult>>;
+
+pub(crate) async fn check_packages(
+    packages: &Vec<Gemspec>,
+    nexus_url: &str,
+    verbose: bool,
+) -> Result<Vec<NexusResult>> {
+    let nexus = get_nexus(nexus_url)?;
+
+    let nexus_results = stream::iter(packages)
+        .map(|package| async { nexus.check_package(package).await })
+        .buffer_unordered(CONCURRENT_REQUESTS)
+        .collect::<ResultCollection>()
+        .await;
+
+    let (oks, errors): (ResultCollection, ResultCollection) =
+        nexus_results.into_iter().partition(Result::is_ok);
+    let oks: Vec<NexusResult> = oks.into_iter().map(Result::unwrap).collect();
+
+    if verbose {
+        errors
+            .into_iter()
+            .map(Result::unwrap_err)
+            .for_each(|error| println!("{}", error));
+    }
+
+    Ok(oks)
+}
 
 pub(crate) fn get_nexus(repo_url: &str) -> Result<Nexus> {
     let url = Url::parse(repo_url)?;
@@ -15,6 +49,14 @@ pub(crate) struct Nexus {
 
     // Which type of artefact should to request
     format_artefact: String,
+}
+
+#[derive(Debug)]
+pub(crate) struct NexusResult {
+    pub(crate) name: String,
+    pub(crate) version: String,
+    pub(crate) purl: String,
+    pub(crate) is_exist: bool,
 }
 
 impl Nexus {
@@ -31,10 +73,19 @@ impl Nexus {
     ///
     /// Check package existance in Nexus repository
     ///
-    pub(crate) async fn check_package(&self, name: &str, version: &str) -> Result<bool> {
+    pub(crate) async fn check_package(&self, package: &Gemspec) -> Result<NexusResult> {
+        let name = &package.name;
+        let version = &package.version;
         let response = self.send_request(name, version).await;
 
-        return self.check_response(response, name, version);
+        let check_result = self.check_response(response, name, version);
+
+        check_result.map(|is_exist| NexusResult {
+            name: name.to_string(),
+            version: version.to_string(),
+            purl: package.purl.to_string(),
+            is_exist,
+        })
     }
 
     //
@@ -46,7 +97,7 @@ impl Nexus {
             let json: serde_json::Result<Value> = serde_json::from_str(&result);
 
             if let Ok(nexus_response) = json {
-                return Ok(nexus_response["items"].as_array().unwrap().len() > 0);
+                return Ok(!nexus_response["items"].as_array().unwrap().is_empty());
             }
 
             return Err(anyhow!("An error occurred when we try to parse Nexus json response. Package: {}, version: {}, platform: {}", name, version, self.format_artefact));
@@ -90,8 +141,6 @@ impl Nexus {
 
 #[cfg(test)]
 mod tests {
-    use anyhow::Error;
-
     use super::*;
 
     #[test]
@@ -201,5 +250,5 @@ mod tests {
 
         assert_eq!(result.is_ok(), true);
         assert_eq!(result.unwrap(), true);
-     }
+    }
 }
