@@ -84,7 +84,7 @@ fn find_version_gem(gem_data: &str, version: &str) -> Option<GemspecResponse> {
     if let Ok(gem_list) = serde_json::from_str::<Vec<GemspecResponse>>(gem_data) {
         return gem_list
             .iter()
-            .find(|item| -> bool { item.number == version })
+            .find(|item| { item.number == version })
             .cloned();
     }
 
