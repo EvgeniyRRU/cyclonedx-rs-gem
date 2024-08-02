@@ -6,7 +6,7 @@ use url::Url;
 
 use crate::gem::Gemspec;
 
-const CONCURRENT_REQUESTS: usize = 50;
+const CONCURRENT_REQUESTS: usize = 20;
 
 type ResultCollection = Vec<Result<NexusResult>>;
 
