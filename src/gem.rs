@@ -10,6 +10,7 @@ use licenses::{get_license, KnownLicense, License, UnknownLicense};
 struct GemspecResponse {
     authors: String,
     number: String,
+    platform: String,
     summary: String,
     sha: String,
     licenses: Option<Vec<String>>,
@@ -32,12 +33,15 @@ pub(crate) struct Gemspec {
     pub(crate) hashes: Vec<HashSpec>,
 }
 
+type GemfileItem<'a> = (&'a str, &'a str, &'a str);
+
 ///
 /// Make request to rubygems.org and try to find gem information
 /// If all ok, this function returns Gemspec struct, which serializable
 /// to bom.json format
 ///
-pub(crate) async fn get_gem(name: &str, version: &str) -> Result<Gemspec> {
+pub(crate) async fn get_gem<'a>(gem_source: GemfileItem<'a>) -> Result<Gemspec> {
+    let (name, version, _) = gem_source;
     let url = format!("https://rubygems.org/api/v1/versions/{name}.json");
 
     let response = get(url).await?;
@@ -47,7 +51,7 @@ pub(crate) async fn get_gem(name: &str, version: &str) -> Result<Gemspec> {
         200 => {
             let json = response.text().await?;
 
-            match find_version_gem(&json, version) {
+            match find_version_gem(&json, gem_source) {
                 Some(gem) => Ok(Gemspec::new(name, version, gem)),
                 None => Err(anyhow!(
                     "Could not find version {} for gem {}",
@@ -80,11 +84,12 @@ pub(crate) async fn get_gem(name: &str, version: &str) -> Result<Gemspec> {
 //
 // Try to find current version gem information from rubygems response
 //
-fn find_version_gem(gem_data: &str, version: &str) -> Option<GemspecResponse> {
+fn find_version_gem<'a>(gem_data: &str, gem_source: GemfileItem<'a>) -> Option<GemspecResponse> {
+    let (_, version, platform) = gem_source;
     if let Ok(gem_list) = serde_json::from_str::<Vec<GemspecResponse>>(gem_data) {
         return gem_list
             .iter()
-            .find(|item| { item.number == version })
+            .find(|item| { (item.number == version) && (item.platform == platform) })
             .cloned();
     }
 
@@ -152,6 +157,7 @@ mod tests {
         let spec = GemspecResponse {
             authors: String::from("David Heinemeier Hansson"),
             number: String::from("7.1.1"),
+            platform: String::from("ruby"),
             summary: String::from("Object-relational mapper framework (part of Rails)."),
             sha: String::from("f8dd03c0f3a462d616781dba3637a281ec86aaf6e643b56bea308e451ee96325"),
             licenses: Some(vec![String::from("MIT")]),
