@@ -33,7 +33,7 @@ pub(crate) struct Gemspec {
     pub(crate) hashes: Vec<HashSpec>,
 }
 
-type GemfileItem<'a> = (&'a str, &'a str, &'a str);
+type GemfileItem<'a> = (&'a str, &'a str, Option<&'a str>);
 
 ///
 /// Make request to rubygems.org and try to find gem information
@@ -52,7 +52,7 @@ pub(crate) async fn get_gem<'a>(gem_source: GemfileItem<'a>) -> Result<Gemspec> 
             let json = response.text().await?;
 
             match find_version_gem(&json, gem_source) {
-                Some(gem) => Ok(Gemspec::new(name, version, gem)),
+                Some(gem) => Ok(Gemspec::new(&gem_source, gem)),
                 None => Err(anyhow!(
                     "Could not find version {} for gem {}",
                     version,
@@ -89,7 +89,10 @@ fn find_version_gem<'a>(gem_data: &str, gem_source: GemfileItem<'a>) -> Option<G
     if let Ok(gem_list) = serde_json::from_str::<Vec<GemspecResponse>>(gem_data) {
         return gem_list
             .iter()
-            .find(|item| { (item.number == version) && (item.platform == platform) })
+            .find(|item| match platform {
+                Some(platform) => (item.number == version) && (item.platform == platform),
+                None => item.number == version,
+            })
             .cloned();
     }
 
@@ -106,7 +109,8 @@ impl HashSpec {
 }
 
 impl Gemspec {
-    fn new(name: &str, version: &str, spec: GemspecResponse) -> Self {
+    fn new<'a>(gem_source: &'a GemfileItem<'a>, spec: GemspecResponse) -> Self {
+        let (name, version, platform) = gem_source;
         let license_data = get_license(spec.licenses);
 
         let licenses_list: Vec<License> = match license_data {
@@ -121,10 +125,15 @@ impl Gemspec {
             _ => vec![],
         };
 
+        let purl = match platform {
+            Some(platform) => format!("pkg:gem/{name}@{version}?platform={platform}"),
+            None => format!("pkg:gem/{name}@{version}"),
+        };
+
         Gemspec {
-            name: name.to_owned(),
-            version: version.to_owned(),
-            purl: format!("pkg:gem/{name}@{version}"),
+            name: name.to_string(),
+            version: version.to_string(),
+            purl,
             author: spec.authors,
             description: spec.summary,
             hashes: vec![HashSpec::new(spec.sha)],
@@ -152,8 +161,8 @@ mod tests {
 
     #[test]
     fn test_gemspec_new_known_license() {
-        let name = "rails";
-        let version = "7.1.1";
+        let gem_source = ("rails", "7.1.1", None);
+        let (name, version, _) = gem_source;
         let spec = GemspecResponse {
             authors: String::from("David Heinemeier Hansson"),
             number: String::from("7.1.1"),
@@ -162,7 +171,7 @@ mod tests {
             sha: String::from("f8dd03c0f3a462d616781dba3637a281ec86aaf6e643b56bea308e451ee96325"),
             licenses: Some(vec![String::from("MIT")]),
         };
-        let result = Gemspec::new(name, version, spec);
+        let result = Gemspec::new(&gem_source, spec);
 
         assert_eq!(result.name, name);
         assert_eq!(result.version, version);
@@ -171,6 +180,33 @@ mod tests {
         assert_eq!(
             result.description.as_str(),
             "Object-relational mapper framework (part of Rails)."
+        );
+    }
+
+    #[test]
+    fn test_gemspec_new_known_license_platform() {
+        let gem_source = ("nokogiri", "1.16.5", Some("x86_64-linux"));
+        let (name, version, _) = gem_source;
+        let spec = GemspecResponse {
+            authors: String::from("Mike Dalessio, Aaron Patterson, Yoko Harada, Akinori MUSHA, John Shahid, Karol Bucek, Sam Ruby, Craig Barnes, Stephen Checkoway, Lars Kanis, Sergio Arbeo, Timothy Elliott, Nobuyoshi Nakada"),
+            number: String::from("1.16.5"),
+            platform: String::from("x86_64-linux"),
+            summary: String::from("Nokogiri (鋸) makes it easy and painless to work with XML and HTML from Ruby. It provides a sensible, easy-to-understand API for reading, writing, modifying, and querying documents. It is fast and standards-compliant by relying on native parsers like libxml2, libgumbo, or xerces."),
+            sha: String::from("0ca238da870066bed2f7837af6f35791bb9b76c4c5638999c46aac44818a6a97"),
+            licenses: Some(vec![String::from("MIT")]),
+        };
+        let result = Gemspec::new(&gem_source, spec);
+
+        assert_eq!(result.name, name);
+        assert_eq!(result.version, version);
+        assert_eq!(
+            result.purl.as_str(),
+            "pkg:gem/nokogiri@1.16.5?platform=x86_64-linux"
+        );
+        assert_eq!(result.author.as_str(), "Mike Dalessio, Aaron Patterson, Yoko Harada, Akinori MUSHA, John Shahid, Karol Bucek, Sam Ruby, Craig Barnes, Stephen Checkoway, Lars Kanis, Sergio Arbeo, Timothy Elliott, Nobuyoshi Nakada");
+        assert_eq!(
+            result.description.as_str(),
+            "Nokogiri (鋸) makes it easy and painless to work with XML and HTML from Ruby. It provides a sensible, easy-to-understand API for reading, writing, modifying, and querying documents. It is fast and standards-compliant by relying on native parsers like libxml2, libgumbo, or xerces."
         );
     }
 }

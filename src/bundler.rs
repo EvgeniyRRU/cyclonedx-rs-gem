@@ -44,7 +44,7 @@ pub(crate) fn parse_gemfile(gemfile_content: String, verbose: bool) -> Gemfile {
             gems.push(Source {
                 name: String::from(captures.get(1).unwrap().as_str()),
                 version: version_info.0,
-                platform: version_info.1
+                platform: version_info.1,
             });
         }
     }
@@ -64,7 +64,7 @@ pub(crate) fn parse_gemfile(gemfile_content: String, verbose: bool) -> Gemfile {
 fn parse_gem_version(version_string: &str) -> (String, Option<String>) {
     match version_string.split_once("-") {
         Some((version, platform)) => (version.to_string(), Some(platform.to_string())),
-        None => (version_string.to_string(), None)
+        None => (version_string.to_string(), None),
     }
 }
 
@@ -80,12 +80,11 @@ impl Source {
     //
     // Returns Gemfile.lock item by tuple contains (name, version, platform)
     //
-    pub(crate) fn get_source(&self) -> (&str, &str, &str) {
+    pub(crate) fn get_source(&self) -> (&str, &str, Option<&str>) {
         match &self.platform {
-            Some(platform) => (&self.name, &self.version, &platform),
-            None => (&self.name, &self.version, "ruby"),
+            Some(platform) => (&self.name, &self.version, Some(&platform)),
+            None => (&self.name, &self.version, None),
         }
-
     }
 }
 
@@ -212,6 +211,7 @@ GEM
     clavius (1.0.4)
     coderay (1.1.3)
     nokogiri (1.16.5-arm64-darwin)
+    opentelemetry-instrumentation-net_http (0.20.0)
 
 PLATFORMS
   arm64-darwin-23
@@ -233,11 +233,27 @@ BUNDLED WITH
         let result = parse_gemfile(String::from(gemfile), false);
         let gems = result.gems;
 
-        assert_eq!(gems.len(), 5);
-        assert_eq!(gems.get(0).unwrap().get_source(), ("actioncable", "7.0.8.4", "ruby"));
-        assert_eq!(gems.get(1).unwrap().get_source(), ("choice", "0.2.0", "ruby"));
-        assert_eq!(gems.get(2).unwrap().get_source(), ("clavius", "1.0.4", "ruby"));
-        assert_eq!(gems.get(3).unwrap().get_source(), ("coderay", "1.1.3", "ruby"));
-        assert_eq!(gems.get(4).unwrap().get_source(), ("nokogiri", "1.16.5", "arm64-darwin"));
+        assert_eq!(gems.len(), 6);
+        assert_eq!(
+            gems.get(0).unwrap().get_source(),
+            ("actioncable", "7.0.8.4", None)
+        );
+        assert_eq!(gems.get(1).unwrap().get_source(), ("choice", "0.2.0", None));
+        assert_eq!(
+            gems.get(2).unwrap().get_source(),
+            ("clavius", "1.0.4", None)
+        );
+        assert_eq!(
+            gems.get(3).unwrap().get_source(),
+            ("coderay", "1.1.3", None)
+        );
+        assert_eq!(
+            gems.get(4).unwrap().get_source(),
+            ("nokogiri", "1.16.5", Some("arm64-darwin"))
+        );
+        assert_eq!(
+            gems.get(5).unwrap().get_source(),
+            ("opentelemetry-instrumentation-net_http", "0.20.0", None)
+        );
     }
 }
