@@ -62,7 +62,7 @@ pub(crate) fn parse_gemfile(gemfile_content: String, verbose: bool) -> Gemfile {
 // Try to find platform specific version of gem
 //
 fn parse_gem_version(version_string: &str) -> (String, Option<String>) {
-    match version_string.split_once("-") {
+    match version_string.split_once('-') {
         Some((version, platform)) => (version.to_string(), Some(platform.to_string())),
         None => (version_string.to_string(), None),
     }
@@ -82,7 +82,7 @@ impl Source {
     //
     pub(crate) fn get_source(&self) -> (&str, &str, Option<&str>) {
         match &self.platform {
-            Some(platform) => (&self.name, &self.version, Some(&platform)),
+            Some(platform) => (&self.name, &self.version, Some(platform)),
             None => (&self.name, &self.version, None),
         }
     }

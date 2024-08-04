@@ -40,7 +40,7 @@ type GemfileItem<'a> = (&'a str, &'a str, Option<&'a str>);
 /// If all ok, this function returns Gemspec struct, which serializable
 /// to bom.json format
 ///
-pub(crate) async fn get_gem<'a>(gem_source: GemfileItem<'a>) -> Result<Gemspec> {
+pub(crate) async fn get_gem(gem_source: GemfileItem<'_>) -> Result<Gemspec> {
     let (name, version, _) = gem_source;
     let url = format!("https://rubygems.org/api/v1/versions/{name}.json");
 
@@ -84,7 +84,7 @@ pub(crate) async fn get_gem<'a>(gem_source: GemfileItem<'a>) -> Result<Gemspec> 
 //
 // Try to find current version gem information from rubygems response
 //
-fn find_version_gem<'a>(gem_data: &str, gem_source: GemfileItem<'a>) -> Option<GemspecResponse> {
+fn find_version_gem(gem_data: &str, gem_source: GemfileItem) -> Option<GemspecResponse> {
     let (_, version, platform) = gem_source;
     if let Ok(gem_list) = serde_json::from_str::<Vec<GemspecResponse>>(gem_data) {
         return gem_list
