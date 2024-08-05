@@ -61,10 +61,10 @@ pub(crate) fn parse_gemfile(gemfile_content: String, verbose: bool) -> Gemfile {
 //
 // Try to find platform specific version of gem
 //
-fn parse_gem_version(version_string: &str) -> (String, Option<String>) {
-    match version_string.split_once('-') {
+fn parse_gem_version(version_str: &str) -> (String, Option<String>) {
+    match version_str.split_once('-') {
         Some((version, platform)) => (version.to_string(), Some(platform.to_string())),
-        None => (version_string.to_string(), None),
+        None => (version_str.to_string(), None),
     }
 }
 
