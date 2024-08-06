@@ -1,37 +1,39 @@
 # CycloneDX Rust Ruby Gem
 
-Это порт на Rust существующего [CycloneDX Ruby Gem](https://github.com/CycloneDX/cyclonedx-ruby-gem/tree/master). Причина появления - крайне медленная работа `CycloneDX Ruby Gem` (опрашивает rubygems.org синхронно в один поток, а нужно для формирования `bom`-файла делать сотни запросов для рядового `rails`-проекта).
+README in Russian [here](README_RU.md).
 
-## Установка
-1. Устанавливаем `Rust`
+This is a port of the existing [CycloneDX Ruby Gem](https://github.com/CycloneDX/cyclonedx-ruby-gem/tree/master) to Rust. The reason for its appearance is the extremely slow performance of the `CycloneDX Ruby Gem` (it polls rubygems.org synchronously in one thread, while you need to make hundreds of requests to generate a `bom`-file for an average `Rails`-project).
+
+## Install
+1. Install `Rust`
 ```shell
 $ brew install rust
 ```
-или следуем инструкциям на [официальном сайте](https://www.rust-lang.org/tools/install).
+or follow instruction on [official website](https://www.rust-lang.org/tools/install).
 
-2. Клонируем этот репозиторий себе
+2. Clone this repository
 ```
 $ git clone git@github.com:EvgeniyRRU/cyclonedx-rs-gem.git && cd cyclonedx-rs-gem
 ```
-3. Собираем и устанавливаем программу
+3. Build and install application
 ```
 $ make install
 ```
-## Использование
+## Usage
 ```shell
 $ cyclonedx-rs-gem [options]
 
 ```
 ```
-  -p, --path <PATH> - путь к папке, содержащей Gemfile.lock. Если не указан, то используется текущая папка
-  -o, --output <OUTPUT> - путь к папке, куда будет записан bom-файл. Если опущен, то будет та же папка, где лежит Gemfile.lock
-  -f, --format-file <FORMAT_FILE>  [default: json] [possible values: xml, json] - формат выходного файла
-  -v, --verbose - нужно ли печатать дополнительную информацию
+  -p, --path <PATH> - path to the folder containing Gemfile.lock. If not specified, the current folder is used
+  -o, --output <OUTPUT> - path to the folder where the bom file will be recorded. If omitted, it will be the same folder where Gemfile.lock is located.
+  -f, --format-file <FORMAT_FILE>  [default: json] [possible values: xml, json] - output file format
+  -v, --verbose - should to print additional information
   -h, --help                       Print help
   -V, --version                    Print version
 ```
-В результате успешной работы программы будет сгенерирован `bom.json` или `bom.xml` в указанной директории.
-**Пример**
+As a result of successful operation, `bom.json` or `bom.xml` will be generated in the specified directory.
+**Example**
 ```shell
 $ cyclonedx-rs-gem -p /Users/ruby/myrailsproject
 ```
