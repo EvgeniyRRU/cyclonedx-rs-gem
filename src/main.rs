@@ -1,9 +1,11 @@
-use anyhow::{bail, Result};
-use futures::{stream, StreamExt};
 use std::fs;
 use std::fs::File;
 use std::io::{ErrorKind, Write};
 use std::path::PathBuf;
+
+use anyhow::{bail, Result};
+use futures::{stream, StreamExt};
+use reqwest_middleware::ClientWithMiddleware;
 
 mod bom_se;
 mod bundler;
@@ -19,7 +21,8 @@ async fn main() -> Result<()> {
     let content = read_gemfilelock(&params.input_file_name)?;
     let specs = bundler::parse_gemfile(content, params.verbose);
 
-    let gems = fetch_gems_info(specs.gems, params.verbose).await;
+    let client = get_client()?;
+    let gems = fetch_gems_info(&client, specs.gems, params.verbose).await;
 
     let bom_file = bom_se::serialize(gems, &params.format)?;
 
@@ -36,11 +39,15 @@ type GemspecResultsPartition = (
     Vec<Result<gem::Gemspec, anyhow::Error>>,
     Vec<Result<gem::Gemspec, anyhow::Error>>,
 );
-async fn fetch_gems_info(specs: Vec<bundler::Source>, verbose: bool) -> Vec<gem::Gemspec> {
+async fn fetch_gems_info(
+    client: &ClientWithMiddleware,
+    specs: Vec<bundler::Source>,
+    verbose: bool,
+) -> Vec<gem::Gemspec> {
     let gem_specs_results = stream::iter(specs)
         .map(|source| async move {
             let source_info = source.get_source();
-            gem::get_gem(source_info).await
+            gem::get_gem(&client, source_info).await
         })
         .buffer_unordered(CONCURRENT_REQUESTS)
         .collect::<Vec<Result<gem::Gemspec, anyhow::Error>>>()
@@ -89,4 +96,19 @@ fn write_bomfile(file_name: &PathBuf, content: String) -> Result<()> {
     file.write_all(content.as_bytes())?;
 
     Ok(())
+}
+
+pub(crate) fn get_client() -> Result<ClientWithMiddleware> {
+    let http = reqwest::Client::builder()
+        .redirect(reqwest::redirect::Policy::none())
+        .build()?;
+    let retry_policy =
+        reqwest_retry::policies::ExponentialBackoff::builder().build_with_max_retries(3);
+    let client = reqwest_middleware::ClientBuilder::new(http)
+        .with(reqwest_retry::RetryTransientMiddleware::new_with_policy(
+            retry_policy,
+        ))
+        .build();
+
+    Ok(client)
 }

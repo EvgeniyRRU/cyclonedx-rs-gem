@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Result};
-use reqwest::get;
+use reqwest_middleware::ClientWithMiddleware;
 use serde::{Deserialize, Serialize};
 
 pub(crate) mod licenses;
@@ -40,11 +40,14 @@ type GemfileItem<'a> = (&'a str, &'a str, Option<&'a str>);
 /// If all ok, this function returns Gemspec struct, which serializable
 /// to bom.json format
 ///
-pub(crate) async fn get_gem(gem_source: GemfileItem<'_>) -> Result<Gemspec> {
+pub(crate) async fn get_gem(
+    client: &ClientWithMiddleware,
+    gem_source: GemfileItem<'_>,
+) -> Result<Gemspec> {
     let (name, version, _) = gem_source;
     let url = format!("https://rubygems.org/api/v1/versions/{name}.json");
 
-    let response = get(url).await?;
+    let response = client.get(url).send().await?;
     let status = response.status();
 
     let result: Result<Gemspec> = match status.as_u16() {
