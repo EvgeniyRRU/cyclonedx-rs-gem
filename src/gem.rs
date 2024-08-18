@@ -1,9 +1,9 @@
-use anyhow::{anyhow, Result};
 use reqwest_middleware::ClientWithMiddleware;
 use serde::{Deserialize, Serialize};
 
 pub(crate) mod licenses;
 
+use crate::errors::FetchPackageError;
 use licenses::{get_license, KnownLicense, License, UnknownLicense};
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -43,41 +43,45 @@ type GemfileItem<'a> = (&'a str, &'a str, Option<&'a str>);
 pub(crate) async fn get_gem(
     client: &ClientWithMiddleware,
     gem_source: GemfileItem<'_>,
-) -> Result<Gemspec> {
+) -> Result<Gemspec, FetchPackageError> {
     let (name, version, _) = gem_source;
     let url = format!("https://rubygems.org/api/v1/versions/{name}.json");
 
-    let response = client.get(url).send().await?;
+    let response =
+        client.get(url).send().await.map_err(|_| {
+            FetchPackageError::SendRequestError(name.to_string(), version.to_string())
+        })?;
     let status = response.status();
 
-    let result: Result<Gemspec> = match status.as_u16() {
+    let result: Result<Gemspec, FetchPackageError> = match status.as_u16() {
         200 => {
-            let json = response.text().await?;
+            let json = response.text().await.map_err(|_| {
+                FetchPackageError::ResponseTextError(name.to_string(), version.to_string())
+            })?;
 
             match find_version_gem(&json, gem_source) {
                 Some(gem) => Ok(Gemspec::new(&gem_source, gem)),
-                None => Err(anyhow!(
-                    "Could not find version {} for gem {}",
-                    version,
-                    name
+                None => Err(FetchPackageError::VersionNotFound(
+                    name.to_string(),
+                    version.to_string(),
                 )),
             }
         }
-        404 => Err(anyhow!("Gem not found: {}, version {}", name, version)),
-        400..=499 => Err(anyhow!(
-            "Client error occurred for gem {}, version {}",
-            name,
-            version
+        404 => Err(FetchPackageError::PackageNotFound(
+            name.to_string(),
+            version.to_string(),
         )),
-        500..=599 => Err(anyhow!(
-            "Server error occurred for gem {}, version {}",
-            name,
-            version
+        400..=499 => Err(FetchPackageError::ClientError(
+            name.to_string(),
+            version.to_string(),
         )),
-        _ => Err(anyhow!(
-            "Unknown error occurred for gem {}, version {}",
-            name,
-            version
+        500..=599 => Err(FetchPackageError::ServerError(
+            name.to_string(),
+            version.to_string(),
+        )),
+        _ => Err(FetchPackageError::UnknownError(
+            name.to_string(),
+            version.to_string(),
         )),
     };
 

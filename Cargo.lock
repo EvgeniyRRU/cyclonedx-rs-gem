@@ -233,11 +233,11 @@ dependencies = [
  "quick-xml",
  "regex",
  "reqwest",
- "reqwest-conditional-middleware",
  "reqwest-middleware",
  "reqwest-retry",
  "serde",
  "serde_json",
+ "thiserror",
  "tokio",
  "uuid",
 ]
@@ -944,18 +944,6 @@ dependencies = [
  "wasm-bindgen-futures",
  "web-sys",
  "winreg",
-]
-
-[[package]]
-name = "reqwest-conditional-middleware"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b1663d9d4fbb6e3900f91455d6d7833301c91ae3c7fc6e116fd7acd40e478a93"
-dependencies = [
- "async-trait",
- "http",
- "reqwest",
- "reqwest-middleware",
 ]
 
 [[package]]

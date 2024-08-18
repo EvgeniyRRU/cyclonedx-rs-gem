@@ -10,6 +10,7 @@ use reqwest_middleware::ClientWithMiddleware;
 mod bom_se;
 mod bundler;
 mod config;
+mod errors;
 mod gem;
 
 const CONCURRENT_REQUESTS: usize = 50;
@@ -36,8 +37,8 @@ async fn main() -> Result<()> {
 // to make requests and fetch all gems info from rubygems.org
 //
 type GemspecResultsPartition = (
-    Vec<Result<gem::Gemspec, anyhow::Error>>,
-    Vec<Result<gem::Gemspec, anyhow::Error>>,
+    Vec<Result<gem::Gemspec, errors::FetchPackageError>>,
+    Vec<Result<gem::Gemspec, errors::FetchPackageError>>,
 );
 async fn fetch_gems_info(
     client: &ClientWithMiddleware,
@@ -50,7 +51,7 @@ async fn fetch_gems_info(
             gem::get_gem(&client, source_info).await
         })
         .buffer_unordered(CONCURRENT_REQUESTS)
-        .collect::<Vec<Result<gem::Gemspec, anyhow::Error>>>()
+        .collect::<Vec<Result<gem::Gemspec, errors::FetchPackageError>>>()
         .await;
 
     let (successes, errors): GemspecResultsPartition =
