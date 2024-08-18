@@ -9,6 +9,7 @@ use reqwest_middleware::ClientWithMiddleware;
 
 mod bom_se;
 mod bundler;
+mod client;
 mod config;
 mod errors;
 mod gem;
@@ -22,7 +23,7 @@ async fn main() -> Result<()> {
     let content = read_gemfilelock(&params.input_file_name)?;
     let specs = bundler::parse_gemfile(content, params.verbose);
 
-    let client = get_client()?;
+    let client = client::get_client()?;
     let gems = fetch_gems_info(&client, specs.gems, params.verbose).await;
 
     let bom_file = bom_se::serialize(gems, &params.format)?;
@@ -97,19 +98,4 @@ fn write_bomfile(file_name: &PathBuf, content: String) -> Result<()> {
     file.write_all(content.as_bytes())?;
 
     Ok(())
-}
-
-pub(crate) fn get_client() -> Result<ClientWithMiddleware> {
-    let http = reqwest::Client::builder()
-        .redirect(reqwest::redirect::Policy::none())
-        .build()?;
-    let retry_policy =
-        reqwest_retry::policies::ExponentialBackoff::builder().build_with_max_retries(3);
-    let client = reqwest_middleware::ClientBuilder::new(http)
-        .with(reqwest_retry::RetryTransientMiddleware::new_with_policy(
-            retry_policy,
-        ))
-        .build();
-
-    Ok(client)
 }
