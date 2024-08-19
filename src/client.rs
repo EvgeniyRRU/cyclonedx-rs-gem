@@ -4,6 +4,10 @@ use reqwest_retry::{default_on_request_failure, policies::ExponentialBackoff, Re
 use reqwest::{Response, Client};
 use reqwest_middleware::{ClientBuilder, Result as MiddlewareResult};
 
+///
+/// Strategy for retry all failed requests, except 404
+/// (gem not found)
+///
 struct RetryAllExcept404;
 impl RetryableStrategy for RetryAllExcept404 {
     fn handle(&self, res: &MiddlewareResult<Response>) -> Option<Retryable> {
@@ -16,6 +20,9 @@ impl RetryableStrategy for RetryAllExcept404 {
     }
 }
 
+///
+/// Configure reqwest http client with custom retry strategy
+///
 pub(crate) fn get_client() -> Result<ClientWithMiddleware> {
     let http = Client::builder()
         .redirect(reqwest::redirect::Policy::none())

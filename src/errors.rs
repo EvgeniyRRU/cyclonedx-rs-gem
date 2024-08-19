@@ -2,7 +2,7 @@ use thiserror::Error;
 
 ///
 /// Errors enum, it required for retry failed requests
-/// 
+///
 #[derive(Error, Debug)]
 pub(crate) enum FetchPackageError {
     #[error("Could not send request for gem {0} version {1}")]
