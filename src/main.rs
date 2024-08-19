@@ -49,7 +49,7 @@ async fn fetch_gems_info(
     let gem_specs_results = stream::iter(specs)
         .map(|source| async move {
             let source_info = source.get_source();
-            gem::get_gem(&client, source_info).await
+            gem::get_gem(client, source_info).await
         })
         .buffer_unordered(CONCURRENT_REQUESTS)
         .collect::<Vec<Result<gem::Gemspec, errors::FetchPackageError>>>()

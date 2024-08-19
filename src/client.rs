@@ -1,8 +1,11 @@
 use anyhow::Result;
+use reqwest::{Client, Response};
 use reqwest_middleware::ClientWithMiddleware;
-use reqwest_retry::{default_on_request_failure, policies::ExponentialBackoff, Retryable, RetryableStrategy, RetryTransientMiddleware};
-use reqwest::{Response, Client};
 use reqwest_middleware::{ClientBuilder, Result as MiddlewareResult};
+use reqwest_retry::{
+    default_on_request_failure, policies::ExponentialBackoff, RetryTransientMiddleware, Retryable,
+    RetryableStrategy,
+};
 
 ///
 /// Strategy for retry all failed requests, except 404
@@ -28,13 +31,9 @@ pub(crate) fn get_client() -> Result<ClientWithMiddleware> {
         .redirect(reqwest::redirect::Policy::none())
         .build()?;
     let retry_policy = ExponentialBackoff::builder().build_with_max_retries(3);
-    let retry_middleware = RetryTransientMiddleware::new_with_policy_and_strategy(
-        retry_policy,
-        RetryAllExcept404,
-    );
-    let client = ClientBuilder::new(http)
-        .with(retry_middleware)
-        .build();
+    let retry_middleware =
+        RetryTransientMiddleware::new_with_policy_and_strategy(retry_policy, RetryAllExcept404);
+    let client = ClientBuilder::new(http).with(retry_middleware).build();
 
     Ok(client)
 }
