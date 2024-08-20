@@ -235,7 +235,7 @@ BUNDLED WITH
 
         assert_eq!(gems.len(), 6);
         assert_eq!(
-            gems.get(0).unwrap().get_source(),
+            gems.first().unwrap().get_source(),
             ("actioncable", "7.0.8.4", None)
         );
         assert_eq!(gems.get(1).unwrap().get_source(), ("choice", "0.2.0", None));
