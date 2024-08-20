@@ -126,7 +126,7 @@ mod tests {
 
         let result = parse_params(args, cwd);
 
-        assert_eq!(result.verbose, false);
+        assert!(!result.verbose);
         assert_eq!(result.format, Format::Json);
         assert_eq!(
             result.input_file_name.to_str().unwrap(),
@@ -150,7 +150,7 @@ mod tests {
 
         let result = parse_params(args, cwd);
 
-        assert_eq!(result.verbose, true);
+        assert!(result.verbose);
         assert_eq!(result.format, Format::Xml);
         assert_eq!(
             result.input_file_name.to_str().unwrap(),
@@ -174,7 +174,7 @@ mod tests {
 
         let result = parse_params(args, cwd);
 
-        assert_eq!(result.verbose, true);
+        assert!(result.verbose);
         assert_eq!(result.format, Format::Xml);
         assert_eq!(
             result.input_file_name.to_str().unwrap(),
@@ -198,7 +198,7 @@ mod tests {
 
         let result = parse_params(args, cwd);
 
-        assert_eq!(result.verbose, false);
+        assert!(!result.verbose);
         assert_eq!(result.format, Format::Json);
         assert_eq!(
             result.input_file_name.to_str().unwrap(),
