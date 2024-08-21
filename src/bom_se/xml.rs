@@ -1,5 +1,5 @@
 use anyhow::{Error, Result};
-use quick_xml::events::{BytesText, Event};
+use quick_xml::events::{BytesPI, BytesText, Event};
 use quick_xml::writer::Writer;
 use uuid::Uuid;
 
@@ -23,9 +23,9 @@ fn build_xml(gems: Vec<Gemspec>, serial_number: &str) -> Result<String> {
     let mut buffer = Vec::new();
     let mut writer = Writer::new_with_indent(&mut buffer, b' ', 2);
 
-    writer.write_event(Event::PI(BytesText::from_escaped(
-        r#"xml version="1.0" encoding="utf-8""#,
-    )))?;
+    let pi = r#"xml version="1.0" encoding="utf-8""#;
+
+    writer.write_event(Event::PI(BytesPI::new(pi)))?;
 
     writer
         .create_element("bom")
