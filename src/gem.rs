@@ -96,13 +96,10 @@ fn find_version(
     gem_source: GemfileItem,
 ) -> Option<GemspecResponse> {
     let (_, version, platform) = gem_source;
-    gems_response
-        .iter()
-        .find(|item| match platform {
-            Some(platform) => (item.number == version) && (item.platform == platform),
-            None => item.number == version,
-        })
-        .cloned()
+    gems_response.into_iter().find(|item| match platform {
+        Some(platform) => (item.number == version) && (item.platform == platform),
+        None => item.number == version,
+    })
 }
 
 impl HashSpec {
