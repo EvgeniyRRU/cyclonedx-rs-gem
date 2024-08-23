@@ -1,9 +1,10 @@
 use anyhow::{anyhow, Result};
 use futures::{stream, StreamExt};
-use reqwest::get;
+use reqwest_middleware::ClientWithMiddleware;
 use serde_json::Value;
 use url::Url;
 
+use crate::client::get_nexus_client;
 use crate::gem::Gemspec;
 
 const CONCURRENT_REQUESTS: usize = 20;
@@ -16,9 +17,10 @@ pub(crate) async fn check_packages(
     verbose: bool,
 ) -> Result<Vec<NexusResult>> {
     let nexus = get_nexus(nexus_url)?;
+    let client = get_nexus_client()?;
 
     let nexus_results = stream::iter(packages)
-        .map(|package| async { nexus.check_package(package).await })
+        .map(|package| async { nexus.check_package(&client, package).await })
         .buffer_unordered(CONCURRENT_REQUESTS)
         .collect::<ResultCollection>()
         .await;
@@ -73,10 +75,14 @@ impl Nexus {
     ///
     /// Check package existance in Nexus repository
     ///
-    pub(crate) async fn check_package(&self, package: &Gemspec) -> Result<NexusResult> {
+    pub(crate) async fn check_package(
+        &self,
+        client: &ClientWithMiddleware,
+        package: &Gemspec,
+    ) -> Result<NexusResult> {
         let name = &package.name;
         let version = &package.version;
-        let response = self.send_request(name, version).await;
+        let response = self.send_request(client, name, version).await;
 
         let check_result = self.check_response(response, name, version);
 
@@ -114,9 +120,14 @@ impl Nexus {
     //
     // Sends request to Nesus and try to receive response
     //
-    async fn send_request(&self, name: &str, version: &str) -> Result<String> {
+    async fn send_request(
+        &self,
+        client: &ClientWithMiddleware,
+        name: &str,
+        version: &str,
+    ) -> Result<String> {
         let url = self.get_search_url(name, version);
-        let response = get(url).await?;
+        let response = client.get(url).send().await?;
         let content = response.text().await?;
 
         Ok(content)

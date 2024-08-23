@@ -37,3 +37,16 @@ pub(crate) fn get_client() -> Result<ClientWithMiddleware> {
 
     Ok(client)
 }
+
+///
+/// Configure reqwest http client for nexus requests
+///
+pub(crate) fn get_nexus_client() -> Result<ClientWithMiddleware> {
+    let http = Client::builder().build()?;
+    let retry_policy = ExponentialBackoff::builder().build_with_max_retries(5);
+    let client = ClientBuilder::new(http)
+        .with(RetryTransientMiddleware::new_with_policy(retry_policy))
+        .build();
+
+    Ok(client)
+}
