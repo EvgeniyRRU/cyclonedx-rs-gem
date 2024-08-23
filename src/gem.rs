@@ -55,11 +55,11 @@ pub(crate) async fn get_gem(
 
     let result: Result<Gemspec, FetchPackageError> = match status.as_u16() {
         200 => {
-            let json = response.text().await.map_err(|_| {
-                FetchPackageError::ResponseTextError(name.to_string(), version.to_string())
+            let gems_response = response.json::<Vec<GemspecResponse>>().await.map_err(|_| {
+                FetchPackageError::ParseResponseError(name.to_string(), version.to_string())
             })?;
 
-            match find_version_gem(&json, gem_source) {
+            match find_version(gems_response, gem_source) {
                 Some(gem) => Ok(Gemspec::new(&gem_source, gem)),
                 None => Err(FetchPackageError::VersionNotFound(
                     name.to_string(),
@@ -91,19 +91,15 @@ pub(crate) async fn get_gem(
 //
 // Try to find current version gem information from rubygems response
 //
-fn find_version_gem(gem_data: &str, gem_source: GemfileItem) -> Option<GemspecResponse> {
+fn find_version(
+    gems_response: Vec<GemspecResponse>,
+    gem_source: GemfileItem,
+) -> Option<GemspecResponse> {
     let (_, version, platform) = gem_source;
-    if let Ok(gem_list) = serde_json::from_str::<Vec<GemspecResponse>>(gem_data) {
-        return gem_list
-            .iter()
-            .find(|item| match platform {
-                Some(platform) => (item.number == version) && (item.platform == platform),
-                None => item.number == version,
-            })
-            .cloned();
-    }
-
-    None
+    gems_response.into_iter().find(|item| match platform {
+        Some(platform) => (item.number == version) && (item.platform == platform),
+        None => item.number == version,
+    })
 }
 
 impl HashSpec {

@@ -7,8 +7,8 @@ use thiserror::Error;
 pub(crate) enum FetchPackageError {
     #[error("Could not send request for gem {0} version {1}")]
     SendRequestError(String, String),
-    #[error("Could not receive response text for {0} for gem {1}")]
-    ResponseTextError(String, String),
+    #[error("Could not parse response for gem {0} version {1}")]
+    ParseResponseError(String, String),
     #[error("Could not find version {0} for gem {1}")]
     VersionNotFound(String, String),
     #[error("Gem not found: {0}, version {1}")]
