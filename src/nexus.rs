@@ -11,6 +11,9 @@ const CONCURRENT_REQUESTS: usize = 20;
 
 type ResultCollection = Vec<Result<NexusResult>>;
 
+///
+/// Check packages existance in Nexus repository
+///
 pub(crate) async fn check_packages(
     packages: &Vec<Gemspec>,
     nexus_url: &str,
@@ -174,7 +177,7 @@ mod tests {
 
         let result = nexus.check_response(respose, name, version);
 
-        assert_eq!(result.is_err(), true);
+        assert!(result.is_err());
         assert_eq!(result.unwrap_err().to_string().as_str(), "An error occurred when we try to fetch data from Nexus. Package: rails, version: 7.1.1, platform: rubygems");
     }
 
@@ -187,7 +190,7 @@ mod tests {
 
         let result = nexus.check_response(respose, name, version);
 
-        assert_eq!(result.is_err(), true);
+        assert!(result.is_err());
         assert_eq!(result.unwrap_err().to_string().as_str(), "An error occurred when we try to parse Nexus json response. Package: rails, version: 7.1.1, platform: rubygems");
     }
 
@@ -203,8 +206,8 @@ mod tests {
         let respose: Result<String> = Ok(String::from(response_content));
         let result = nexus.check_response(respose, name, version);
 
-        assert_eq!(result.is_ok(), true);
-        assert_eq!(result.unwrap(), false);
+        assert!(result.is_ok());
+        assert!(!result.unwrap());
     }
 
     #[test]
@@ -259,7 +262,7 @@ mod tests {
         let respose: Result<String> = Ok(String::from(response_content));
         let result = nexus.check_response(respose, name, version);
 
-        assert_eq!(result.is_ok(), true);
-        assert_eq!(result.unwrap(), true);
+        assert!(result.is_ok());
+        assert!(result.unwrap());
     }
 }
