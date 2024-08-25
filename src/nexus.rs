@@ -1,15 +1,15 @@
-use anyhow::{anyhow, Result};
 use futures::{stream, StreamExt};
 use reqwest_middleware::ClientWithMiddleware;
 use serde_json::Value;
 use url::Url;
 
 use crate::client::get_nexus_client;
+use crate::errors::NexusError;
 use crate::gem::Gemspec;
 
 const CONCURRENT_REQUESTS: usize = 20;
 
-type ResultCollection = Vec<Result<NexusResult>>;
+type ResultCollection = Vec<Result<NexusResult, NexusError>>;
 
 ///
 /// Check packages existance in Nexus repository
@@ -18,12 +18,11 @@ pub(crate) async fn check_packages(
     packages: &Vec<Gemspec>,
     nexus_url: &str,
     verbose: bool,
-) -> Result<Vec<NexusResult>> {
-    let nexus = get_nexus(nexus_url)?;
-    let client = get_nexus_client()?;
+) -> Result<Vec<NexusResult>, NexusError> {
+    let nexus = Nexus::new(nexus_url)?;
 
     let nexus_results = stream::iter(packages)
-        .map(|package| async { nexus.check_package(&client, package).await })
+        .map(|package| async { nexus.check_package(package).await })
         .buffer_unordered(CONCURRENT_REQUESTS)
         .collect::<ResultCollection>()
         .await;
@@ -42,18 +41,15 @@ pub(crate) async fn check_packages(
     Ok(oks)
 }
 
-pub(crate) fn get_nexus(repo_url: &str) -> Result<Nexus> {
-    let url = Url::parse(repo_url)?;
-
-    Ok(Nexus::new(url))
-}
-
 pub(crate) struct Nexus {
     // Nexus repository url
     repo_url: Url,
 
     // Which type of artefact should to request
     format_artefact: String,
+
+    // Nexus client instance
+    client: ClientWithMiddleware,
 }
 
 #[derive(Debug)]
@@ -68,26 +64,27 @@ impl Nexus {
     ///
     /// Initializes new Nexus instance
     ///
-    pub(crate) fn new(repo_url: Url) -> Self {
-        Nexus {
+    pub(crate) fn new(repo_url: &str) -> Result<Self, NexusError> {
+        let repo_url =
+            Url::parse(repo_url).map_err(|_| NexusError::UrlParse(repo_url.to_string()))?;
+        let client = get_nexus_client().map_err(|_| NexusError::BuildClient)?;
+
+        Ok(Nexus {
             format_artefact: String::from("rubygems"),
             repo_url,
-        }
+            client,
+        })
     }
 
     ///
     /// Check package existance in Nexus repository
     ///
-    pub(crate) async fn check_package(
-        &self,
-        client: &ClientWithMiddleware,
-        package: &Gemspec,
-    ) -> Result<NexusResult> {
+    pub(crate) async fn check_package(&self, package: &Gemspec) -> Result<NexusResult, NexusError> {
         let name = &package.name;
         let version = &package.version;
-        let response = self.send_request(client, name, version).await;
+        let response = self.send_request(name, version).await;
 
-        let check_result = self.check_response(response, name, version);
+        let check_result = self.check_response(response);
 
         check_result.map(|is_exist| NexusResult {
             name: name.to_string(),
@@ -101,39 +98,28 @@ impl Nexus {
     // Parses respose json and try to check whether package exists in
     // Nexus repository
     //
-    fn check_response(&self, response: Result<String>, name: &str, version: &str) -> Result<bool> {
-        if let Ok(result) = response {
-            let json: serde_json::Result<Value> = serde_json::from_str(&result);
-
-            if let Ok(nexus_response) = json {
-                return Ok(!nexus_response["items"].as_array().unwrap().is_empty());
-            }
-
-            return Err(anyhow!("An error occurred when we try to parse Nexus json response. Package: {}, version: {}, platform: {}", name, version, self.format_artefact));
-        }
-
-        Err(anyhow!(
-                "An error occurred when we try to fetch data from Nexus. Package: {}, version: {}, platform: {}",
-                name,
-                version,
-                self.format_artefact)
-            )
+    fn check_response(&self, response: Result<Value, NexusError>) -> Result<bool, NexusError> {
+        response.map(|json| !json["items"].as_array().unwrap().is_empty())
     }
 
     //
     // Sends request to Nesus and try to receive response
     //
-    async fn send_request(
-        &self,
-        client: &ClientWithMiddleware,
-        name: &str,
-        version: &str,
-    ) -> Result<String> {
+    async fn send_request(&self, name: &str, version: &str) -> Result<Value, NexusError> {
         let url = self.get_search_url(name, version);
-        let response = client.get(url).send().await?;
-        let content = response.text().await?;
+        let response = self
+            .client
+            .get(url)
+            .send()
+            .await
+            .map_err(|_| NexusError::SendRequest(name.to_string(), version.to_string()))?;
 
-        Ok(content)
+        let json = response
+            .json::<Value>()
+            .await
+            .map_err(|_| NexusError::ParseResponse(name.to_string(), version.to_string()))?;
+
+        Ok(json)
     }
 
     //
@@ -159,7 +145,7 @@ mod tests {
 
     #[test]
     fn test_build_search_url() {
-        let nexus = Nexus::new(Url::parse("https://mynexus.com").unwrap());
+        let nexus = Nexus::new("https://mynexus.com").unwrap();
         let name = "rails";
         let version = "7.1.1";
 
@@ -170,41 +156,32 @@ mod tests {
 
     #[test]
     fn test_when_request_fail() {
-        let nexus = Nexus::new(Url::parse("https://mynexus.com").unwrap());
+        let nexus = Nexus::new("https://mynexus.com").unwrap();
         let name = "rails";
         let version = "7.1.1";
-        let respose: Result<String> = Err(anyhow!("Network error"));
+        let respose: NexusError = NexusError::SendRequest(name.to_string(), version.to_string());
 
-        let result = nexus.check_response(respose, name, version);
-
-        assert!(result.is_err());
-        assert_eq!(result.unwrap_err().to_string().as_str(), "An error occurred when we try to fetch data from Nexus. Package: rails, version: 7.1.1, platform: rubygems");
-    }
-
-    #[test]
-    fn test_when_request_success_broken_json() {
-        let nexus = Nexus::new(Url::parse("https://mynexus.com").unwrap());
-        let name = "rails";
-        let version = "7.1.1";
-        let respose: Result<String> = Ok(String::from("{ \"foo\": \"bar\""));
-
-        let result = nexus.check_response(respose, name, version);
+        let result = nexus.check_response(Err(respose));
 
         assert!(result.is_err());
-        assert_eq!(result.unwrap_err().to_string().as_str(), "An error occurred when we try to parse Nexus json response. Package: rails, version: 7.1.1, platform: rubygems");
+        assert_eq!(
+            result.unwrap_err().to_string().as_str(),
+            "Could not send request to Nexus for gem rails version 7.1.1"
+        );
     }
 
     #[test]
     fn test_when_request_success_empty_items() {
-        let nexus = Nexus::new(Url::parse("https://mynexus.com").unwrap());
+        let nexus = Nexus::new("https://mynexus.com").unwrap();
         let name = "rails";
         let version = "7.1.1";
         let response_content = r#"{
   "continuationToken": null,
   "items": []
 }"#;
-        let respose: Result<String> = Ok(String::from(response_content));
-        let result = nexus.check_response(respose, name, version);
+        let respose: Result<Value, NexusError> = serde_json::from_str(response_content)
+            .map_err(|_| NexusError::ParseResponse(name.to_string(), version.to_string()));
+        let result = nexus.check_response(respose);
 
         assert!(result.is_ok());
         assert!(!result.unwrap());
@@ -212,7 +189,7 @@ mod tests {
 
     #[test]
     fn test_when_request_success_not_empty_items() {
-        let nexus = Nexus::new(Url::parse("https://mynexus.com").unwrap());
+        let nexus = Nexus::new("https://mynexus.com").unwrap();
         let name = "rails";
         let version = "7.1.1";
         let response_content = r#"{
@@ -259,8 +236,9 @@ mod tests {
     }
   ]
 }"#;
-        let respose: Result<String> = Ok(String::from(response_content));
-        let result = nexus.check_response(respose, name, version);
+        let respose: Result<Value, NexusError> = serde_json::from_str(response_content)
+            .map_err(|_| NexusError::ParseResponse(name.to_string(), version.to_string()));
+        let result = nexus.check_response(respose);
 
         assert!(result.is_ok());
         assert!(result.unwrap());
