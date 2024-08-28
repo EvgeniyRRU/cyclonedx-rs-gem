@@ -27,11 +27,17 @@ $ cyclonedx-rs-gem [options]
   -o, --output <OUTPUT> - путь к папке, куда будет записан bom-файл. Если опущен, то будет та же папка, где лежит Gemfile.lock
   -f, --format-file <FORMAT_FILE>  [default: json] [possible values: xml, json] - формат выходного файла
   -v, --verbose - нужно ли печатать дополнительную информацию
-  -h, --help                       Print help
-  -V, --version                    Print version
+  -n, --nexus-url <NEXUS_URL> - url локального Nexus-репозитория для проверки наличия пакетов в нём
+  -h, --help                       Вывести краткую информацию по использованию программы
+  -V, --version                    Вывести версию
 ```
 В результате успешной работы программы будет сгенерирован `bom.json` или `bom.xml` в указанной директории.
-**Пример**
+**Примеры**
+Сгенерировать bom-файл:
 ```shell
 $ cyclonedx-rs-gem -p /Users/ruby/myrailsproject
+```
+Сгенерировать bom-файл и проверить наличие пакетов в nexus-репозитории:
+```shell
+$ cyclonedx-rs-gem -p /Users/ruby/myrailsproject --nexus-url='https://somecorpnexus.com'
 ```

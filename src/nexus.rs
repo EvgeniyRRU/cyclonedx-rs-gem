@@ -7,7 +7,7 @@ use crate::client::get_nexus_client;
 use crate::errors::NexusError;
 use crate::gem::Gemspec;
 
-const CONCURRENT_REQUESTS: usize = 20;
+const CONCURRENT_REQUESTS: usize = 3;
 
 type ResultCollection = Vec<Result<NexusResult, NexusError>>;
 
@@ -109,7 +109,7 @@ impl Nexus {
         let url = self.get_search_url(name, version);
         let response = self
             .client
-            .get(url)
+            .get(&url)
             .send()
             .await
             .map_err(|_| NexusError::SendRequest(name.to_string(), version.to_string()))?;
