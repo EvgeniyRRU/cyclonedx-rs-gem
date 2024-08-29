@@ -1,6 +1,7 @@
 use futures::{stream, StreamExt};
 use reqwest_middleware::ClientWithMiddleware;
 use serde_json::Value;
+use std::fmt;
 use url::Url;
 
 use crate::client::get_nexus_client;
@@ -54,10 +55,10 @@ pub(crate) struct Nexus {
 
 #[derive(Debug)]
 pub(crate) struct NexusResult {
-    pub(crate) name: String,
-    pub(crate) version: String,
-    pub(crate) purl: String,
-    pub(crate) is_exist: bool,
+    name: String,
+    version: String,
+    purl: String,
+    is_exist: bool,
 }
 
 impl Nexus {
@@ -80,8 +81,7 @@ impl Nexus {
     /// Check package existance in Nexus repository
     ///
     pub(crate) async fn check_package(&self, package: &Gemspec) -> Result<NexusResult, NexusError> {
-        let name = &package.name;
-        let version = &package.version;
+        let Gemspec { name, version, .. } = &package;
         let response = self.send_request(name, version).await;
 
         let check_result = self.check_response(response);
@@ -136,6 +136,25 @@ impl Nexus {
             .append_pair("format", &self.format_artefact);
 
         base_url.to_string()
+    }
+}
+
+impl NexusResult {
+    ///
+    /// Check if package absent in NexusResult
+    ///
+    pub(crate) fn is_absent(&self) -> bool {
+        !self.is_exist
+    }
+}
+
+impl fmt::Display for NexusResult {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "Package name: {}, version: {}, purl: {}",
+            &self.name, &self.version, &self.purl
+        )
     }
 }
 
@@ -242,5 +261,29 @@ mod tests {
 
         assert!(result.is_ok());
         assert!(result.unwrap());
+    }
+
+    #[test]
+    fn test_package_exists_in_nexus() {
+        let package: NexusResult = NexusResult {
+            name: String::from("rails"),
+            version: String::from("7.1.1"),
+            purl: String::from("pkg:gem/rails@7.1.1"),
+            is_exist: true,
+        };
+
+        assert!(!package.is_absent());
+    }
+
+    #[test]
+    fn test_package_not_exists_in_nexus() {
+        let package: NexusResult = NexusResult {
+            name: String::from("rails"),
+            version: String::from("7.1.1"),
+            purl: String::from("pkg:gem/rails@7.1.1"),
+            is_exist: false,
+        };
+
+        assert!(package.is_absent());
     }
 }

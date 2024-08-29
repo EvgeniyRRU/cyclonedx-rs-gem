@@ -108,16 +108,13 @@ async fn check_nexus_repository(gems: &Vec<gem::Gemspec>, params: &config::Param
         let result = nexus::check_packages(gems, url, params.verbose).await?;
 
         let not_found: Vec<nexus::NexusResult> =
-            result.into_iter().filter(|item| !item.is_exist).collect();
+            result.into_iter().filter(|item| item.is_absent()).collect();
 
         if not_found.is_empty() {
             println!("All packages exists in nexus repository.");
         } else {
             for package in not_found {
-                println!(
-                    "Package not found in Nexus. Name: {}, version: {}, purl: {}",
-                    package.name, package.version, package.purl
-                )
+                println!("Not found in Nexus. {}", package)
             }
         }
     }
