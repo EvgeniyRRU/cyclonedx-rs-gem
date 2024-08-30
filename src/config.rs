@@ -23,6 +23,10 @@ struct Args {
     // Run verbosely
     #[arg(short, long)]
     verbose: bool,
+
+    // Remote nexus repository url
+    #[arg(short, long)]
+    nexus_url: Option<String>,
 }
 
 #[derive(Debug)]
@@ -31,6 +35,7 @@ pub(crate) struct Params {
     pub(crate) input_file_name: PathBuf,
     pub(crate) output_file_name: PathBuf,
     pub(crate) verbose: bool,
+    pub(crate) nexus_url: Option<String>,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
@@ -83,6 +88,7 @@ fn parse_params(args: Args, cwd: PathBuf) -> Params {
         output_file_name: output_path,
         format: args.format_file,
         verbose: args.verbose,
+        nexus_url: args.nexus_url,
     }
 }
 
@@ -122,6 +128,7 @@ mod tests {
             output: None,
             format_file: Format::Json,
             verbose: false,
+            nexus_url: None,
         };
 
         let result = parse_params(args, cwd);
@@ -136,6 +143,7 @@ mod tests {
             result.output_file_name.to_str().unwrap(),
             "/Users/me/work/rust/cyclonedx-rs-gem/bom.json"
         );
+        assert_eq!(result.nexus_url, None);
     }
 
     #[test]
@@ -146,6 +154,7 @@ mod tests {
             output: None,
             format_file: Format::Xml,
             verbose: true,
+            nexus_url: None,
         };
 
         let result = parse_params(args, cwd);
@@ -160,6 +169,7 @@ mod tests {
             result.output_file_name.to_str().unwrap(),
             "/Users/me/work/ruby/superrailsapp/bom.xml"
         );
+        assert_eq!(result.nexus_url, None);
     }
 
     #[test]
@@ -170,6 +180,7 @@ mod tests {
             output: Some(String::from("/Users/me/work/ruby/railsapp/")),
             format_file: Format::Xml,
             verbose: true,
+            nexus_url: None,
         };
 
         let result = parse_params(args, cwd);
@@ -184,6 +195,7 @@ mod tests {
             result.output_file_name.to_str().unwrap(),
             "/Users/me/work/ruby/railsapp/bom.xml"
         );
+        assert_eq!(result.nexus_url, None);
     }
 
     #[test]
@@ -194,6 +206,7 @@ mod tests {
             output: Some(String::from("/Users/me/work/ruby/railsapp/")),
             format_file: Format::Json,
             verbose: false,
+            nexus_url: Some(String::from("https://somenexus.com/")),
         };
 
         let result = parse_params(args, cwd);
@@ -208,5 +221,6 @@ mod tests {
             result.output_file_name.to_str().unwrap(),
             "/Users/me/work/ruby/railsapp/bom.json"
         );
+        assert_eq!(result.nexus_url.unwrap().as_str(), "https://somenexus.com/");
     }
 }

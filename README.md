@@ -29,11 +29,17 @@ $ cyclonedx-rs-gem [options]
   -o, --output <OUTPUT> - path to the folder where the bom file will be recorded. If omitted, it will be the same folder where Gemfile.lock is located.
   -f, --format-file <FORMAT_FILE>  [default: json] [possible values: xml, json] - output file format
   -v, --verbose - should to print additional information
+  -n, --nexus-url <NEXUS_URL> - url local Nexus repository for check if package exists in local Nexus
   -h, --help                       Print help
   -V, --version                    Print version
 ```
 As a result of successful operation, `bom.json` or `bom.xml` will be generated in the specified directory.
-**Example**
+**Examples**
+Just generate bom file:
 ```shell
 $ cyclonedx-rs-gem -p /Users/ruby/myrailsproject
+```
+Generate bom file and check if all packages exists in local Nexus repository:
+```shell
+$ cyclonedx-rs-gem -p /Users/ruby/myrailsproject --nexus-url='https://somecorpnexus.com'
 ```

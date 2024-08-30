@@ -13,6 +13,7 @@ mod client;
 mod config;
 mod errors;
 mod gem;
+mod nexus;
 
 const CONCURRENT_REQUESTS: usize = 50;
 
@@ -26,15 +27,17 @@ async fn main() -> Result<()> {
     let client = client::get_client()?;
     let gems = fetch_gems_info(&client, specs.gems, params.verbose).await;
 
-    let bom_file = bom_se::serialize(gems, &params.format)?;
+    let bom_file = bom_se::serialize(&gems, &params.format)?;
 
     write_bomfile(&params.output_file_name, bom_file)?;
+
+    check_nexus_repository(&gems, &params).await?;
 
     Ok(())
 }
 
 //
-// This is a core fumction. It spawns threads and dispatches it
+// This is a core function. It spawns threads and dispatches it
 // to make requests and fetch all gems info from rubygems.org
 //
 type GemspecResultsPartition = (
@@ -96,6 +99,25 @@ fn write_bomfile(file_name: &PathBuf, content: String) -> Result<()> {
     let mut file = File::create(file_name)?;
 
     file.write_all(content.as_bytes())?;
+
+    Ok(())
+}
+
+async fn check_nexus_repository(gems: &Vec<gem::Gemspec>, params: &config::Params) -> Result<()> {
+    if let Some(url) = &params.nexus_url {
+        let result = nexus::check_packages(gems, url, params.verbose).await?;
+
+        let not_found: Vec<nexus::NexusResult> =
+            result.into_iter().filter(|item| item.is_absent()).collect();
+
+        if not_found.is_empty() {
+            println!("All packages exists in nexus repository.");
+        } else {
+            for package in not_found {
+                println!("Not found in Nexus. {}", package)
+            }
+        }
+    }
 
     Ok(())
 }

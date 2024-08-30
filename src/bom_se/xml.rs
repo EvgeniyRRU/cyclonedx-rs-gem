@@ -9,7 +9,7 @@ use crate::gem::Gemspec;
 ///
 /// Serialize gems collection to xml string
 ///
-pub(super) fn serialize(gems: Vec<Gemspec>) -> Result<String> {
+pub(super) fn serialize(gems: &Vec<Gemspec>) -> Result<String> {
     let random_uuid = Uuid::new_v4();
     let serial_number = format!("urn:uuid:{}", random_uuid);
 
@@ -19,7 +19,7 @@ pub(super) fn serialize(gems: Vec<Gemspec>) -> Result<String> {
 //
 // Builds bom.xml content
 //
-fn build_xml(gems: Vec<Gemspec>, serial_number: &str) -> Result<String> {
+fn build_xml(gems: &Vec<Gemspec>, serial_number: &str) -> Result<String> {
     let mut buffer = Vec::new();
     let mut writer = Writer::new_with_indent(&mut buffer, b' ', 2);
 
@@ -39,8 +39,7 @@ fn build_xml(gems: Vec<Gemspec>, serial_number: &str) -> Result<String> {
             ]
             .into_iter(),
         )
-        // .write_pi_content(r#"xml version="1.0" encoding="utf-8"#)?
-        .write_inner_content::<_, Error>(|writer| build_components(writer, &gems))?;
+        .write_inner_content::<_, Error>(|writer| build_components(writer, gems))?;
 
     let xml_bytes = writer.into_inner();
 
@@ -155,7 +154,7 @@ mod tests {
         let gems: Vec<Gemspec> = Vec::new();
         let serial = String::from("urn:uuid:b83ca3d9-6b17-4566-bd50-201af63d9c42");
 
-        let xml = build_xml(gems, &serial).unwrap();
+        let xml = build_xml(&gems, &serial).unwrap();
         let expected = r#"<?xml version="1.0" encoding="utf-8"?>
 <bom xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" serialNumber="urn:uuid:b83ca3d9-6b17-4566-bd50-201af63d9c42" version="1" xmlns="http://cyclonedx.org/schema/bom/1.5">
   <components>
@@ -200,7 +199,7 @@ mod tests {
         let gems = vec![first_gem, second_gem];
         let serial = String::from("urn:uuid:b83ca3d9-6b17-4566-bd50-201af63d9c42");
 
-        let xml = build_xml(gems, &serial).unwrap();
+        let xml = build_xml(&gems, &serial).unwrap();
         let expected = r#"<?xml version="1.0" encoding="utf-8"?>
 <bom xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" serialNumber="urn:uuid:b83ca3d9-6b17-4566-bd50-201af63d9c42" version="1" xmlns="http://cyclonedx.org/schema/bom/1.5">
   <components>
