@@ -1,4 +1,5 @@
-use anyhow::{Error, Result};
+use std::io::Result;
+
 use quick_xml::events::{BytesPI, BytesText, Event};
 use quick_xml::writer::Writer;
 use uuid::Uuid;
@@ -9,7 +10,7 @@ use crate::gem::Gemspec;
 ///
 /// Serialize gems collection to xml string
 ///
-pub(super) fn serialize(gems: &Vec<Gemspec>) -> Result<String> {
+pub(super) fn serialize(gems: &Vec<Gemspec>) -> anyhow::Result<String> {
     let random_uuid = Uuid::new_v4();
     let serial_number = format!("urn:uuid:{}", random_uuid);
 
@@ -19,7 +20,7 @@ pub(super) fn serialize(gems: &Vec<Gemspec>) -> Result<String> {
 //
 // Builds bom.xml content
 //
-fn build_xml(gems: &Vec<Gemspec>, serial_number: &str) -> Result<String> {
+fn build_xml(gems: &Vec<Gemspec>, serial_number: &str) -> anyhow::Result<String> {
     let mut buffer = Vec::new();
     let mut writer = Writer::new_with_indent(&mut buffer, b' ', 2);
 
@@ -39,7 +40,7 @@ fn build_xml(gems: &Vec<Gemspec>, serial_number: &str) -> Result<String> {
             ]
             .into_iter(),
         )
-        .write_inner_content::<_, Error>(|writer| build_components(writer, gems))?;
+        .write_inner_content(|writer| build_components(writer, gems))?;
 
     let xml_bytes = writer.into_inner();
 
@@ -52,7 +53,7 @@ fn build_xml(gems: &Vec<Gemspec>, serial_number: &str) -> Result<String> {
 fn build_components(writer: &mut Writer<&mut Vec<u8>>, gems: &Vec<Gemspec>) -> Result<()> {
     writer
         .create_element("components")
-        .write_inner_content::<_, Error>(|writer| {
+        .write_inner_content(|writer| {
             for gem in gems {
                 build_component(writer, gem)?;
             }
@@ -66,11 +67,11 @@ fn build_components(writer: &mut Writer<&mut Vec<u8>>, gems: &Vec<Gemspec>) -> R
 // Builds xml repersentatiom of "component" tag. It is main part of bom.xml,
 // becase it represents one dependency
 //
-fn build_component(writer: &mut Writer<&mut Vec<u8>>, gem: &Gemspec) -> Result<(), Error> {
+fn build_component(writer: &mut Writer<&mut Vec<u8>>, gem: &Gemspec) -> Result<()> {
     writer
         .create_element("component")
         .with_attribute(("type", "library"))
-        .write_inner_content::<_, Error>(|writer| {
+        .write_inner_content(|writer| {
             writer
                 .create_element("name")
                 .write_text_content(BytesText::new(&gem.name))?;
@@ -85,11 +86,11 @@ fn build_component(writer: &mut Writer<&mut Vec<u8>>, gem: &Gemspec) -> Result<(
 
             writer
                 .create_element("hashes")
-                .write_inner_content::<_, Error>(|writer| build_hashes(writer, gem))?;
+                .write_inner_content(|writer| build_hashes(writer, gem))?;
 
             writer
                 .create_element("licenses")
-                .write_inner_content::<_, Error>(|writer| build_licanses(writer, gem))?;
+                .write_inner_content(|writer| build_licanses(writer, gem))?;
 
             writer
                 .create_element("purl")
@@ -121,7 +122,7 @@ fn build_hashes(writer: &mut Writer<&mut Vec<u8>>, gem: &Gemspec) -> Result<()> 
 fn build_licanses(writer: &mut Writer<&mut Vec<u8>>, gem: &Gemspec) -> Result<()> {
     writer
         .create_element("license")
-        .write_inner_content::<_, Error>(|writer| {
+        .write_inner_content(|writer| {
             for license_type in &gem.licenses {
                 match license_type {
                     License::KnownLicense(license) => {
