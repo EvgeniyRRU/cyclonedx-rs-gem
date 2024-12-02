@@ -19,4 +19,4 @@ uuid = { version = "1.11.0", features = ["v4", "fast-rng"] }
 reqwest-retry = "0.7.0"
 reqwest-middleware = "0.3.3"
 thiserror = "2.0.3"
-url = "2.5.3"
+url = "2.5.4"
