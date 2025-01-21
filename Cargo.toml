@@ -15,7 +15,7 @@ serde = { version = "1.0.217", features = ["derive"] }
 serde_json = { version = "1.0.137", features = ["std"] }
 tokio = { version = "1.43.0", features = ["macros", "rt"] }
 futures = "0.3"
-uuid = { version = "1.11.1", features = ["v4", "fast-rng"] }
+uuid = { version = "1.12.1", features = ["v4", "fast-rng"] }
 reqwest-retry = "0.7.0"
 reqwest-middleware = "0.4.0"
 thiserror = "2.0.11"
