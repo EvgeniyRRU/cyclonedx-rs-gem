@@ -11,7 +11,7 @@ clap = { version = "4.5.31", features = ["derive"] }
 quick-xml = { version = "0.37.2", features = ["serialize"] }
 regex = "1.11.1"
 reqwest = { version = "0.12.12", features = ["json"] }
-serde = { version = "1.0.218", features = ["derive"] }
+serde = { version = "1.0.219", features = ["derive"] }
 serde_json = { version = "1.0.139", features = ["std"] }
 tokio = { version = "1.43.0", features = ["macros", "rt"] }
 futures = "0.3"
