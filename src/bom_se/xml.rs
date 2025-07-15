@@ -12,7 +12,7 @@ use crate::gem::Gemspec;
 ///
 pub(super) fn serialize(gems: &Vec<Gemspec>) -> anyhow::Result<String> {
     let random_uuid = Uuid::new_v4();
-    let serial_number = format!("urn:uuid:{}", random_uuid);
+    let serial_number = format!("urn:uuid:{random_uuid}");
 
     build_xml(gems, &serial_number)
 }

@@ -18,9 +18,9 @@ struct Bom<'a> {
 /// Serialize gems collection to json string
 ///
 pub(super) fn serialize(gems: &Vec<Gemspec>) -> Result<String> {
-    let serial_number = format!("urn:uuid:{}", Uuid::new_v4());
+    let serial_number_uuid = Uuid::new_v4();
 
-    build_json(gems, serial_number)
+    build_json(gems, format!("urn:uuid:{serial_number_uuid}"))
 }
 
 //

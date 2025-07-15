@@ -63,15 +63,14 @@ async fn fetch_gems_info(
 
     let gem_specs: Vec<gem::Gemspec> = successes.into_iter().map(Result::unwrap).collect();
     if verbose {
+        let total_gems = &gem_specs.len();
         errors
             .into_iter()
             .map(Result::unwrap_err)
-            .for_each(|error| println!("{}", error));
-        println!(
-            "\nTotal received info about {} gems from rubygems.org",
-            gem_specs.len()
-        );
+            .for_each(|error| println!("{error}"));
+        println!("\nTotal received info about {total_gems} gems from rubygems.org");
     }
+
     gem_specs
 }
 
@@ -114,7 +113,7 @@ async fn check_nexus_repository(gems: &Vec<gem::Gemspec>, params: &config::Param
             println!("All packages exists in nexus repository.");
         } else {
             for package in not_found {
-                println!("Not found in Nexus. {}", package)
+                println!("Not found in Nexus. {package}")
             }
         }
     }

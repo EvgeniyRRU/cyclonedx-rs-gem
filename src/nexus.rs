@@ -36,7 +36,7 @@ pub(crate) async fn check_packages(
         errors
             .into_iter()
             .map(Result::unwrap_err)
-            .for_each(|error| println!("{}", error));
+            .for_each(|error| println!("{error}"));
     }
 
     Ok(oks)
@@ -150,11 +150,13 @@ impl NexusResult {
 
 impl fmt::Display for NexusResult {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "Package name: {}, version: {}, purl: {}",
-            &self.name, &self.version, &self.purl
-        )
+        let NexusResult {
+            name,
+            version,
+            purl,
+            ..
+        } = self;
+        write!(f, "Package name: {name}, version: {version}, purl: {purl}")
     }
 }
 
