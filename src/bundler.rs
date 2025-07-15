@@ -72,7 +72,7 @@ impl Gemfile {
     fn show_info(&self) {
         let length = self.gems.len();
 
-        println!("\nGemfile.lock file total contains {} gems\n", length);
+        println!("\nGemfile.lock file total contains {length} gems\n");
     }
 }
 

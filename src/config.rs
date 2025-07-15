@@ -68,7 +68,8 @@ pub(super) fn prepare_env() -> Params {
 //
 fn parse_params(args: Args, cwd: PathBuf) -> Params {
     let lock_file_name = "Gemfile.lock";
-    let bom_file_name = format!("bom.{}", &args.format_file);
+    let file_format = &args.format_file;
+    let bom_file_name = format!("bom.{file_format}");
 
     let mut input_path = match args.path {
         Some(path_str) => PathBuf::from(path_str),
@@ -93,15 +94,13 @@ fn parse_params(args: Args, cwd: PathBuf) -> Params {
 }
 
 fn print_params(params: &Params) {
-    println!("Output file format: {}", params.format);
-    println!(
-        "Input directory (should contains Gemfile.lock file): {}",
-        params.input_file_name.to_str().unwrap()
-    );
-    println!(
-        "Output directory (will place bom file): {}",
-        params.output_file_name.to_str().unwrap()
-    );
+    let format = &params.format;
+    let input_dir_name = params.input_file_name.to_str().unwrap();
+    let output_dir_name = params.output_file_name.to_str().unwrap();
+
+    println!("Output file format: {format}");
+    println!("Input directory (should contains Gemfile.lock file): {input_dir_name}");
+    println!("Output directory (will place bom file): {output_dir_name}");
 }
 
 impl fmt::Display for Format {
@@ -111,7 +110,7 @@ impl fmt::Display for Format {
             Format::Xml => "xml",
         };
 
-        write!(f, "{}", str)
+        write!(f, "{str}")
     }
 }
 
