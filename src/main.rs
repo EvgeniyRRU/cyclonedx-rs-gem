@@ -3,8 +3,8 @@ use std::fs::File;
 use std::io::{ErrorKind, Write};
 use std::path::PathBuf;
 
-use anyhow::{bail, Result};
-use futures::{stream, StreamExt};
+use anyhow::{Result, bail};
+use futures::{StreamExt, stream};
 use reqwest_middleware::ClientWithMiddleware;
 
 mod bom_se;

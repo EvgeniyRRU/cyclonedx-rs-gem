@@ -3,8 +3,8 @@ use reqwest::{Client, Response};
 use reqwest_middleware::ClientWithMiddleware;
 use reqwest_middleware::{ClientBuilder, Result as MiddlewareResult};
 use reqwest_retry::{
-    default_on_request_failure, policies::ExponentialBackoff, RetryTransientMiddleware, Retryable,
-    RetryableStrategy,
+    RetryTransientMiddleware, Retryable, RetryableStrategy, default_on_request_failure,
+    policies::ExponentialBackoff,
 };
 
 ///

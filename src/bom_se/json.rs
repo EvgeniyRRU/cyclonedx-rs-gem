@@ -48,8 +48,8 @@ impl<'a> Bom<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::gem::licenses::{KnownLicense, License, UnknownLicense};
     use crate::gem::HashSpec;
+    use crate::gem::licenses::{KnownLicense, License, UnknownLicense};
 
     #[test]
     fn test_when_no_components() {
@@ -74,13 +74,18 @@ mod tests {
             version: String::from("7.0.8.4"),
             purl: String::from("pkg:gem/activemodel@7.0.8.4"),
             author: String::from("David Heinemeier Hansson"),
-            licenses: vec![License::KnownLicense(KnownLicense::new(String::from("MIT")))],
-            description: String::from("A toolkit for building modeling frameworks like Active Record. Rich support for attributes, callbacks, validations, serialization, internationalization, and testing."),
-            hashes: vec!(HashSpec{
+            licenses: vec![License::KnownLicense(KnownLicense::new(String::from(
+                "MIT",
+            )))],
+            description: String::from(
+                "A toolkit for building modeling frameworks like Active Record. Rich support for attributes, callbacks, validations, serialization, internationalization, and testing.",
+            ),
+            hashes: vec![HashSpec {
                 alg: String::from("SHA-256"),
-                content: String::from("ef4e092d8644121b3e756e831bed6a16878317d02b9611bec8efcfdaee6525d6")
-            })
-
+                content: String::from(
+                    "ef4e092d8644121b3e756e831bed6a16878317d02b9611bec8efcfdaee6525d6",
+                ),
+            }],
         };
         let second_gem = Gemspec {
             name: String::from("brakeman"),
