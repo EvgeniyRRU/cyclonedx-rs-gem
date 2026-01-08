@@ -116,7 +116,7 @@ impl fmt::Display for Format {
 
 #[cfg(test)]
 mod tests {
-    use super::{parse_params, Args, Format};
+    use super::{Args, Format, parse_params};
     use std::path::PathBuf;
 
     #[test]

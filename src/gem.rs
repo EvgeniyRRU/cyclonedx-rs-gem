@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 pub(crate) mod licenses;
 
 use crate::errors::FetchPackageError;
-use licenses::{get_license, KnownLicense, License, UnknownLicense};
+use licenses::{KnownLicense, License, UnknownLicense, get_license};
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 struct GemspecResponse {
@@ -191,10 +191,14 @@ mod tests {
         let gem_source = ("nokogiri", "1.16.5", Some("x86_64-linux"));
         let (name, version, _) = gem_source;
         let spec = GemspecResponse {
-            authors: String::from("Mike Dalessio, Aaron Patterson, Yoko Harada, Akinori MUSHA, John Shahid, Karol Bucek, Sam Ruby, Craig Barnes, Stephen Checkoway, Lars Kanis, Sergio Arbeo, Timothy Elliott, Nobuyoshi Nakada"),
+            authors: String::from(
+                "Mike Dalessio, Aaron Patterson, Yoko Harada, Akinori MUSHA, John Shahid, Karol Bucek, Sam Ruby, Craig Barnes, Stephen Checkoway, Lars Kanis, Sergio Arbeo, Timothy Elliott, Nobuyoshi Nakada",
+            ),
             number: String::from("1.16.5"),
             platform: String::from("x86_64-linux"),
-            summary: String::from("Nokogiri (鋸) makes it easy and painless to work with XML and HTML from Ruby. It provides a sensible, easy-to-understand API for reading, writing, modifying, and querying documents. It is fast and standards-compliant by relying on native parsers like libxml2, libgumbo, or xerces."),
+            summary: String::from(
+                "Nokogiri (鋸) makes it easy and painless to work with XML and HTML from Ruby. It provides a sensible, easy-to-understand API for reading, writing, modifying, and querying documents. It is fast and standards-compliant by relying on native parsers like libxml2, libgumbo, or xerces.",
+            ),
             sha: String::from("0ca238da870066bed2f7837af6f35791bb9b76c4c5638999c46aac44818a6a97"),
             licenses: Some(vec![String::from("MIT")]),
         };
@@ -206,7 +210,10 @@ mod tests {
             result.purl.as_str(),
             "pkg:gem/nokogiri@1.16.5?platform=x86_64-linux"
         );
-        assert_eq!(result.author.as_str(), "Mike Dalessio, Aaron Patterson, Yoko Harada, Akinori MUSHA, John Shahid, Karol Bucek, Sam Ruby, Craig Barnes, Stephen Checkoway, Lars Kanis, Sergio Arbeo, Timothy Elliott, Nobuyoshi Nakada");
+        assert_eq!(
+            result.author.as_str(),
+            "Mike Dalessio, Aaron Patterson, Yoko Harada, Akinori MUSHA, John Shahid, Karol Bucek, Sam Ruby, Craig Barnes, Stephen Checkoway, Lars Kanis, Sergio Arbeo, Timothy Elliott, Nobuyoshi Nakada"
+        );
         assert_eq!(
             result.description.as_str(),
             "Nokogiri (鋸) makes it easy and painless to work with XML and HTML from Ruby. It provides a sensible, easy-to-understand API for reading, writing, modifying, and querying documents. It is fast and standards-compliant by relying on native parsers like libxml2, libgumbo, or xerces."

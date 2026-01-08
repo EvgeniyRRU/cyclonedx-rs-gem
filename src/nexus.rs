@@ -1,4 +1,4 @@
-use futures::{stream, StreamExt};
+use futures::{StreamExt, stream};
 use reqwest_middleware::ClientWithMiddleware;
 use serde_json::Value;
 use std::fmt;
@@ -172,7 +172,12 @@ mod tests {
 
         let url = nexus.get_search_url(name, version);
 
-        assert_eq!(url, String::from("https://mynexus.com/service/rest/v1/search/assets?name=rails&version=7.1.1&format=rubygems"))
+        assert_eq!(
+            url,
+            String::from(
+                "https://mynexus.com/service/rest/v1/search/assets?name=rails&version=7.1.1&format=rubygems"
+            )
+        )
     }
 
     #[test]
