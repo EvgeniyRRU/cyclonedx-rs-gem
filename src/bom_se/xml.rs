@@ -30,15 +30,13 @@ fn build_xml(gems: &Vec<Gemspec>, serial_number: &str) -> anyhow::Result<String>
 
     writer
         .create_element("bom")
-        .with_attributes(
-            vec![
-                ("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance"),
-                ("xmlns:xsd", "http://www.w3.org/2001/XMLSchema"),
-                ("serialNumber", serial_number),
-                ("version", "1"),
-                ("xmlns", "http://cyclonedx.org/schema/bom/1.5"),
-            ]
-        )
+        .with_attributes(vec![
+            ("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance"),
+            ("xmlns:xsd", "http://www.w3.org/2001/XMLSchema"),
+            ("serialNumber", serial_number),
+            ("version", "1"),
+            ("xmlns", "http://cyclonedx.org/schema/bom/1.5"),
+        ])
         .write_inner_content(|writer| build_components(writer, gems))?;
 
     let xml_bytes = writer.into_inner();
