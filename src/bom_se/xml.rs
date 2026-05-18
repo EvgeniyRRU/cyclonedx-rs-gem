@@ -38,7 +38,6 @@ fn build_xml(gems: &Vec<Gemspec>, serial_number: &str) -> anyhow::Result<String>
                 ("version", "1"),
                 ("xmlns", "http://cyclonedx.org/schema/bom/1.5"),
             ]
-            .into_iter(),
         )
         .write_inner_content(|writer| build_components(writer, gems))?;
 
